@@ -1,0 +1,40 @@
+resource "random_id" "server" {
+  keepers = {
+    azi_id = 1
+  }
+  byte_length = 8
+}
+
+resource "azurerm_traffic_manager_profile" "tfpro" {
+  name                   = random_id.server.hex
+  resource_group_name    = azurerm_resource_group.RG1.name
+  traffic_routing_method = "Performance"
+
+  dns_config {
+    relative_name = random_id.server.hex
+    ttl           = 100
+  }
+
+  monitor_config {
+    protocol                     = "http"
+    port                         = 80
+    path                         = "/"
+    interval_in_seconds          = 30
+    timeout_in_seconds           = 9
+    tolerated_number_of_failures = 3
+  }
+
+  tags = {
+    Name = "Profile Performance"
+  }
+}
+
+resource "azurerm_traffic_manager_endpoint" "appservicetraffic" {
+  
+  name                = random_id.server.hex
+  resource_group_name = azurerm_resource_group.RG1.name
+  profile_name        = azurerm_app_service_plan.asp.name
+  target_resource_id  = azurerm_app_service_plan.asp.id
+  type                = "azureEndpoints"
+  priority            = 1
+}
